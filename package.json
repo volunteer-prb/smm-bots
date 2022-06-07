@@ -1,0 +1,25 @@
+{
+  "name": "smm-bots",
+  "description": "Bots for reposting messages in Twitter and TG",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "test": "npm test"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "telegram-bot-api": "2.0.1",
+    "ts-node": "10.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/volunteer-prb/smm-bots.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/volunteer-prb/smm-bots/issues"
+  },
+  "homepage": "https://github.com/volunteer-prb/smm-bots#readme"
+}
