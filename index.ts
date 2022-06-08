@@ -25,7 +25,7 @@ api.start()
   .catch(console.error);
 
 api.on('update', (update: TG_Update) => {
-  if (destChannelId && update.message?.chat.id && update.message?.chat.id === sourceChannelId) {
+  if (isActive && destChannelId && update.message?.chat.id && update.message?.chat.id === sourceChannelId) {
     api.sendMessage({
       chat_id: destChannelId,
       text: update.message.text
