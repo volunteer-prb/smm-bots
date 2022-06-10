@@ -5,10 +5,11 @@ require('dotenv').config();
 // @ts-ignore
 import TG from 'telegram-bot-api';
 
-const sourceChannelId = process.env.SOURCE_CHANNEL_ID;
-let destChannelId = process.env.DEST_CHANNEL_ID;
-const adminsIds = new Set(process.env.BOT_ADMINS?.split(','));
+const sourceChannelId = process.env.SOURCE_CHANNEL_ID!.toString();
+let destChannelId = process.env.DEST_CHANNEL_ID!.toString();
+const adminsIds = new Set(process.env.BOT_ADMINS!.split(','));
 let isActive = false;
+const regex = new RegExp(process.env.REGEX_INPUT!.toString());
 
 const api = new TG({
   token: process.env.BOT_TOKEN
@@ -25,14 +26,16 @@ api.start()
   .catch(console.error);
 
 api.on('update', (update: TG_Update) => {
-  if (isActive && destChannelId && update.message?.chat.id && update.message?.chat.id === sourceChannelId) {
+  console.log('on update:\n\tupdate.message?.text = ' + update.message?.text + '\tupdate.message?.chat.id = ' + update.message?.chat.id)
+  if (isActive && destChannelId && update.message?.chat.id && update.message?.chat.id.toString() === sourceChannelId && update.message?.text && regex.test(update.message.text)) {
+    console.log('\tforward message')
     api.sendMessage({
       chat_id: destChannelId,
       text: update.message.text
     });
   }
 
-  if (update.message?.from.username && adminsIds.has(update.message?.from.username)) {
+  if (update.message?.chat.id.toString() !== sourceChannelId  && update.message?.from.username && adminsIds.has(update.message?.from.username)) {
     reactOnAdminCommands(update);
   }
 });
