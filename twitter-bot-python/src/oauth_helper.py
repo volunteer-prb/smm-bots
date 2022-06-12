@@ -1,5 +1,6 @@
 import sys
 import requests
+from requests.auth import HTTPBasicAuth
 import os
 from requests_oauthlib import OAuth1Session
 from dotenv import load_dotenv
@@ -60,7 +61,20 @@ def __get_user_access_tokens(resource_owner_oauth_token, resource_owner_oauth_to
     return oauth
 
 
-def connect_to_oauth():
+def create_oauth1_session():
     resource_owner_oauth_token, resource_owner_oauth_token_secret = __request_token()
     authorization_pin = __get_user_authorization(resource_owner_oauth_token)
     return __get_user_access_tokens(resource_owner_oauth_token, resource_owner_oauth_token_secret, authorization_pin)
+
+
+def get_oauth2_token():
+    response = requests.post(
+        auth=HTTPBasicAuth(CONSUMER_KEY, CONSUMER_SECRET),
+        url="https://api.twitter.com/oauth2/token?grant_type=client_credentials",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        }
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
