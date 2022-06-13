@@ -2,6 +2,7 @@ import sys
 import requests
 from requests.auth import HTTPBasicAuth
 import os
+import logging
 from requests_oauthlib import OAuth1Session
 from dotenv import load_dotenv
 
@@ -11,6 +12,7 @@ CONSUMER_KEY = os.environ['CONSUMER_KEY']
 CONSUMER_SECRET = os.environ['CONSUMER_SECRET']
 ACCESS_TOKEN = os.environ['ACCESS_TOKEN']
 TOKEN_SECRET = os.environ['TOKEN_SECRET']
+TWEETER_USER_NAME = str(os.environ['TWEETER_USER_NAME'])
 
 
 def __request_token():
@@ -79,3 +81,18 @@ def get_oauth2_token():
     return response.json()["access_token"]
 
 
+def get_user_id(auth2_token):
+    response = requests.get(
+        url=f"https://api.twitter.com/2/users/by/username/{TWEETER_USER_NAME}",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Authorization": f'Bearer {auth2_token}'
+        }
+    )
+    logging.debug(f'get_user_id: TWEETER_USER_NAME = {TWEETER_USER_NAME}, '
+                  f'response = {response}')
+    if response.status_code != 200:
+        raise Exception(f"Cannot find a user {TWEETER_USER_NAME}. "
+                        f"Response code: {response.status_code}, "
+                        f"response content: {response.content}")
+    return response.json()["data"]["id"]

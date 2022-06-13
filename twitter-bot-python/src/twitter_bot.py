@@ -4,6 +4,8 @@ import time
 import logging
 import os
 from dotenv import load_dotenv
+import threading
+from src.oauth_helper import create_oauth1_session, get_oauth2_token, get_user_id
 
 load_dotenv()
 
@@ -12,34 +14,55 @@ TWEETS_SEARCH_QUERY = str(os.environ['TWEETS_SEARCH_QUERY'])
 
 
 class TwitterBot:
-    def __init__(self, user_id, auth1, auth2_token):
-        self.user_id = user_id
-        self.auth1 = auth1
-        self.auth2_token = auth2_token
+    def __init__(self):
+        self.user_id = None
+        self.auth1 = None
+        self.auth2_token = None
         self.job = None
+        self.thread = None
+
+    def run(self):
+        self.thread = threading.Thread(target=self.__run_loop)
+        self.thread.start()
 
     @staticmethod
-    def run():
+    def __run_loop():
         while True:
             schedule.run_pending()
             time.sleep(1)
 
+    def is_started(self):
+        return self.job is not None
+
     def start(self):
-        if self.job is None:
-            self.job = schedule.every(UPDATE_WATCHER_TIMEOUT_IN_SECONDS)\
-                .seconds.do(self.update_watcher)
+        if not self.is_started():
+            self.__start()
             print("Twitter bot started")
         else:
             print("Twitter bot is already started")
 
+    def __start(self):
+        self.__authorize()
+        self.job = schedule.every(UPDATE_WATCHER_TIMEOUT_IN_SECONDS) \
+            .seconds.do(self.update_watcher)
+
+    def __authorize(self):
+        self.auth2_token = get_oauth2_token()
+        self.user_id = get_user_id(self.auth2_token)
+        self.auth1 = create_oauth1_session().auth
+
     def stop(self):
-        if self.job is not None:
-            schedule.cancel_job(self.job)
+        if self.is_started():
+            self.__stop()
             print("Twitter bot stopped")
             return 0
         else:
             print("Twitter bot is already stopped")
             return -1
+
+    def __stop(self):
+        schedule.cancel_job(self.job)
+        self.job = None
 
     def update_watcher(self):
         print("Update watcher")

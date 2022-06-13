@@ -1,13 +1,17 @@
-from src.oauth_helper import create_oauth1_session, get_oauth2_token
 from src.twitter_bot import TwitterBot
+from src.twitter_bot_handler import TwitterBotHandler
 import requests
 import logging
 import os
 from dotenv import load_dotenv
+from http.server import HTTPServer
+from functools import partial
 
 load_dotenv()
 
 TWEETER_USER_NAME = str(os.environ['TWEETER_USER_NAME'])
+SERVER_PORT = int(os.environ['SERVER_PORT'])
+HOST_NAME = "localhost"
 
 
 def get_user_id(auth2_token):
@@ -29,11 +33,17 @@ def get_user_id(auth2_token):
 
 if __name__ == '__main__':
     print("Twitter Bot started")
-    auth2_token = get_oauth2_token()
-    user_id = get_user_id(auth2_token)
-    auth1 = create_oauth1_session().auth
-
-    bot = TwitterBot(user_id=user_id, auth2_token=auth2_token, auth1=auth1)
-    bot.start()
+    bot = TwitterBot()
     bot.run()
 
+    handler = partial(TwitterBotHandler, bot)
+    server = HTTPServer((HOST_NAME, SERVER_PORT), handler)
+    print("Twitter Bot Server started http://%s:%s" % (HOST_NAME, SERVER_PORT))
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    server.server_close()
+    print("Twitter Bot Server stopped.")
