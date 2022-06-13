@@ -1,7 +1,5 @@
 from src.oauth_helper import create_oauth1_session, get_oauth2_token
 import requests
-import string
-import random
 import schedule
 import time
 import logging
@@ -10,20 +8,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TWEETER_USER_NAME = str(os.environ['TWEETER_USER_NAME'])
 UPDATE_WATCHER_TIMEOUT_IN_SECONDS = int(os.environ['UPDATE_WATCHER_TIMEOUT_IN_SECONDS'])
 TWEETS_SEARCH_QUERY = str(os.environ['TWEETS_SEARCH_QUERY'])
 
-# update_watcher_counter = 0
-# update_watcher_counter_string = ''.join(random.choice(string.ascii_letters) for i in range(10))
 
-
-def update_watcher(auth1, auth2Token):
+def update_watcher(auth1, user_id, auth2Token):
     print("Update watcher")
     twits = fetch_twits(auth2Token)
-    retweet_twits(auth1, twits)
-    # global update_watcher_counter
-    # update_watcher_counter = update_watcher_counter + 1
-    # create_twit(auth1, update_watcher_counter_string + ' ' + str(update_watcher_counter))
+    retweet_twits(auth1, user_id, twits)
 
 
 def fetch_twits(auth2Token):
@@ -57,37 +50,63 @@ def create_twit(auth, text):
         auth=auth,
         url="https://api.twitter.com/2/tweets",
         json={"text": text},
-        headers={"Content-Type": "application/json"}
+        headers={
+            "Content-Type": "application/json"
+        }
     )
     logging.debug(f'create_twit: response = {response}')
     if response.status_code != 201:
         logging.error(f'Twit {text} was not created. Response code: {response.status_code}, response content: {response.content}')
 
 
-# def retweet_twits(auth, twits):
-#     for twit in twits["data"]:
-#         twit_id = twit['id']
-#         response = requests.post(
-#             auth=auth,
-#             url=f"https://api.twitter.com/1.1/statuses/retweet/{twit_id}.json",
-#             headers={"Content-Type": "application/json"}
-#         )
-#         logging.debug(f'retweet_twit: id = {twit_id}, response = {response}')
-#         if response.status_code != 201:
-#             logging.error(f'Twit {twit} was not retweeted. Response code: {response.status_code}, response content: {response.content}')
+def retweet_twit(auth, user_id, twit):
+    twit_id = twit['id']
+    response = requests.post(
+        auth=auth,
+        json={
+            "tweet_id": f"{twit_id}"
+        },
+        url=f"https://api.twitter.com/2/users/{user_id}/retweets",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f'Bearer {auth2Token}'
+        }
+    )
+    logging.debug(f'retweet_twit: id = {twit_id}, response = {response}')
+    if response.status_code != 200:
+        logging.error(f'Twit {twit} was not retweeted. Response code: {response.status_code}, response content: {response.content}')
 
 
-def retweet_twits(auth, twits):
+def retweet_twits(auth, user_id, twits):
     for twit in twits["data"]:
-        twit_text = twit['text']
-        create_twit(auth, twit_text)
+        # create_twit(auth, twit['text'])
+        retweet_twit(auth, user_id, twit)
+
+
+def get_user_id(auth2Token):
+    response = requests.get(
+        url=f"https://api.twitter.com/2/users/by/username/{TWEETER_USER_NAME}",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Authorization": f'Bearer {auth2Token}'
+        }
+    )
+    logging.debug(f'get_user_id: TWEETER_USER_NAME = {TWEETER_USER_NAME}, '
+                  f'response = {response}')
+    if response.status_code != 200:
+        raise Exception(f"Cannot find a user {TWEETER_USER_NAME}. "
+                        f"Response code: {response.status_code}, "
+                        f"response content: {response.content}")
+    return response.json()["data"]["id"]
 
 
 if __name__ == '__main__':
     print("Twitter Bot started")
     auth2Token = get_oauth2_token()
     auth1 = create_oauth1_session().auth
-    schedule.every(UPDATE_WATCHER_TIMEOUT_IN_SECONDS).seconds.do(update_watcher, auth1, auth2Token)
+    user_id = get_user_id(auth2Token)
+    schedule.every(UPDATE_WATCHER_TIMEOUT_IN_SECONDS)\
+        .seconds.do(update_watcher, auth1,user_id, auth2Token)
     while True:
         schedule.run_pending()
         time.sleep(1)

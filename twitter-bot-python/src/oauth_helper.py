@@ -78,3 +78,4 @@ def get_oauth2_token():
     assert response.status_code == 200
     return response.json()["access_token"]
 
+
