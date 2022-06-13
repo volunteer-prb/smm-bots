@@ -9,5 +9,5 @@
 
 ## Run the bot
 ```
-    $ python3 twitter-bot.py
+    $ python3 setup.py
 ````
