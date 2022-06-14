@@ -2,8 +2,11 @@ version: "3.9"
 services:
     telegram-bot:
         build: telegram-bot/.
+        restart: always
+        network_mode: host
     twitter-bot:
         build: twitter-bot-python/.
-        ports:
-          - "8081:8081"
-
+        restart: always
+        expose:
+            - 9081
+        network_mode: host

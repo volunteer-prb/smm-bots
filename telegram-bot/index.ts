@@ -71,7 +71,9 @@ function startTgListening() {
 }
 
 function twitterBotClient(command: string) {
-  return needle("get", TWITTER_BOT_API_URL + command);
+  const url = TWITTER_BOT_API_URL!.toString() + command
+  console.log(url);
+  return needle("get", url);
 }
 
 // Telegram specific commands
