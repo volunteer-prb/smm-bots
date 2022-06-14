@@ -11,7 +11,7 @@ load_dotenv()
 
 TWEETER_USER_NAME = str(os.environ['TWEETER_USER_NAME'])
 SERVER_PORT = int(os.environ['SERVER_PORT'])
-HOST_NAME = "localhost"
+HOST_NAME = "0.0.0.0"
 
 
 def get_user_id(auth2_token):
