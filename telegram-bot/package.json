@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "dotenv": "^16.0.1",
+    "needle": "^3.1.0",
+    "telegraf": "^4.8.5",
     "telegram-bot-api": "2.0.1",
     "ts-node": "10.8.1"
   },
@@ -21,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/volunteer-prb/smm-bots/issues"
   },
-  "homepage": "https://github.com/volunteer-prb/smm-bots#readme"
+  "homepage": "https://github.com/volunteer-prb/smm-bots#readme",
+  "devDependencies": {
+    "@types/needle": "^2.5.3"
+  }
 }

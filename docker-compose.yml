@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+    telegram-bot:
+        build: telegram-bot/.
+    twitter-bot:
+        build: twitter-bot-python/.
+        ports:
+          - "8081:8081"
+
