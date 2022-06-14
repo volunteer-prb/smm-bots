@@ -113,9 +113,10 @@ api.command("stoptg", (ctx) => {
 });
 
 // Twitter specific commands
-api.command("infotw", (ctx) => {
+api.command("infotw", async (ctx) => {
   try {
-    say(ctx, "Больше не буду следить за сообщениями в Твиттере");
+    const result = await twitterBotClient('status');
+    say(ctx, `Текущий статус Твиттер бота: ${result.body.status}`);
   } catch (e) {
     twitterApiAccessError(ctx, e);
   }
