@@ -32,11 +32,29 @@ Example response
 ```
     $ curl -X POST --data-raw '{"verifier" : "{PIN}"} http://localhost:{SERVER_PORT}/start
 ````
+Example response
+```
+{
+    "status": "started"
+}
+```
 ### Stop
 ```
     $ curl http://localhost:{SERVER_PORT}/stop
 ````
+Example response
+```
+{
+    "status": "stopped"
+}
+```
 ### Get current status
 ```
     $ curl http://localhost:{SERVER_PORT}/status
 ````
+Example response
+```
+{
+    "status": "started"
+}
+```
