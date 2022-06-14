@@ -13,11 +13,20 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         logging.debug(f"do_GET: self.path={self.path}")
         if self.path == '/' or self.path == '/status':
             self.__send_ok_response(self.__get_status_response())
-        elif self.path == '/start':
-            self.twitter_bot.start()
-            self.__send_ok_response(self.__get_status_response())
+        elif self.path == '/authorization-url':
+            authorization_url = self.twitter_bot.start_authorization()
+            self.__send_ok_response({"url": f"{authorization_url}"})
         elif self.path == '/stop':
             self.twitter_bot.stop()
+            self.__send_ok_response(self.__get_status_response())
+        else:
+            self.__send_invalid_request_response(f"The endpoint {self.path} is not supported")
+
+    def do_POST(self):
+        logging.debug(f"do_POST: self.path={self.path}")
+        if self.path == '/start':
+            verifier = self.__read_body()['verifier']
+            self.twitter_bot.start(verifier)
             self.__send_ok_response(self.__get_status_response())
         else:
             self.__send_invalid_request_response(f"The endpoint {self.path} is not supported")
@@ -35,7 +44,7 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(obj).encode("utf-8"))
+        self.wfile.write(json.dumps(obj).encode('utf-8'))
 
     def __send_invalid_request_response(self, error_message):
         self.send_response(400)
@@ -46,5 +55,10 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
                 {
                     "error_message": error_message
                  }
-            ).encode("utf-8")
+            ).encode('utf-8')
         )
+
+    def __read_body(self):
+        content_len = int(self.headers.get('Content-Length'))
+        body = self.rfile.read(content_len)
+        return json.loads(body.decode('utf-8'))
