@@ -1,8 +1,9 @@
-import needle from "needle";
+import needle, {BodyData} from "needle";
 import dotenv from 'dotenv';
 import {Telegraf, Context} from "telegraf";
 import {ForceReply} from "typegram/markup";
-import { InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove } from "telegraf/typings/core/types/typegram";
+import {InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove} from "telegraf/typings/core/types/typegram";
+
 dotenv.config();
 
 const {
@@ -20,7 +21,9 @@ const adminsIds = new Set(BOT_ADMINS?.split(','));
 let isTgActive = false;
 let isTwActive = false;
 const regex = new RegExp(REGEX_INPUT?.toString() || '');
-const pins: {[name: string]: string} = {};
+const pins: { [name: string]: string } = {};
+
+const PIN_MESSAGE = "Пин: ";
 
 if (!BOT_TOKEN) {
   throw "Can't start without bot token";
@@ -39,15 +42,20 @@ api.on('callback_query', async (ctx) => {
 
     const pinFinished = pins[chat.username].length === 6;
 
-    if (pinFinished) {
-      console.log('pin: ', pins[chat.username]);
-    }
-
-    pins[chat.username] = '';
-
-    await ctx.telegram.editMessageText(chat.id, ctx.callbackQuery.message?.message_id, undefined, pins[chat.username], {
+    await ctx.telegram.editMessageText(chat.id, ctx.callbackQuery.message?.message_id, undefined, PIN_MESSAGE + pins[chat.username], {
       reply_markup: pinFinished ? undefined : getNumbersKeyboard()
     });
+
+    try {
+      if (pinFinished) {
+        await twitterBotClient('start', {verifier: pins[chat.username]});
+        pins[chat.username] = '';
+      }
+    } catch (e) {
+      twitterApiAccessError(ctx, e);
+      ctx.answerCbQuery();
+      return;
+    }
   }
 
   ctx.answerCbQuery();
@@ -61,7 +69,7 @@ api.on('text', (ctx, next) => {
     ctx.telegram.sendMessage(destChannelId, ctx.message.text);
   }
 
-  if (ctx.message?.chat.type === 'private'  && ctx.message?.from.username && adminsIds.has(ctx.message?.from.username)) {
+  if (ctx.message?.chat.type === 'private' && ctx.message?.from.username && adminsIds.has(ctx.message?.from.username)) {
     next();
   }
 });
@@ -70,10 +78,13 @@ function startTgListening() {
   api.launch({dropPendingUpdates: true});
 }
 
-function twitterBotClient(command: string) {
-  const url = TWITTER_BOT_API_URL!.toString() + command
-  console.log(url);
-  return needle("get", url);
+function twitterBotClient(command: string, data?: BodyData) {
+  const url = TWITTER_BOT_API_URL?.toString() + command;
+  if (data) {
+    return needle("post", url, data);
+  } else {
+    return needle("get", url);
+  }
 }
 
 // Telegram specific commands
@@ -113,10 +124,11 @@ api.command("infotw", (ctx) => {
 api.command("starttw", async (ctx) => {
   if (ctx.message.from.username && !isTwActive) {
     try {
-      await twitterBotClient('start');
+      const result = await twitterBotClient('authorization-url');
       isTwActive = true;
       pins[ctx.message.from.username] = '';
-      say(ctx, "Теперь я слежу за сообщениями в Твиттере [Получите пин и введите его ниже:](https://api.twitter.com/oauth/authorize?oauth_token=rGWefgAAAAABdoTMAAABgVyTvg4)", getNumbersKeyboard());
+      say(ctx, `Теперь я слежу за сообщениями в Твиттере [Получите пин и введите его ниже:](${result.body.url})`);
+      say(ctx, "Пин: ", getNumbersKeyboard());
     } catch (e) {
       twitterApiAccessError(ctx, e);
     }
@@ -163,15 +175,15 @@ function getNumbersKeyboard(): InlineKeyboardMarkup {
   return {
     inline_keyboard: [
       [{text: '1', callback_data: "1"},
-      {text: '2', callback_data: "2"},
-      {text: '3', callback_data: "3"},
-      {text: '4', callback_data: "4"},
-      {text: '5', callback_data: "5"}],
+        {text: '2', callback_data: "2"},
+        {text: '3', callback_data: "3"},
+        {text: '4', callback_data: "4"},
+        {text: '5', callback_data: "5"}],
       [{text: '6', callback_data: "6"},
-      {text: '7', callback_data: "7"},
-      {text: '8', callback_data: "8"},
-      {text: '9', callback_data: "9"},
-      {text: '0', callback_data: "0"}]
+        {text: '7', callback_data: "7"},
+        {text: '8', callback_data: "8"},
+        {text: '9', callback_data: "9"},
+        {text: '0', callback_data: "0"}]
     ]
   };
 }
