@@ -38,17 +38,24 @@ api.on('callback_query', async (ctx) => {
   console.log(ctx.callbackQuery.message);
 
   if (chat && chat.type === "private" && chat.username) {
-    pins[chat.username] = (pins[chat.username] || '') + ctx.callbackQuery.data;
-
-    const pinFinished = pins[chat.username].length === 6;
-
+    let pinFinished = false;
+    if(ctx.callbackQuery.data === "enter") {
+      pinFinished = true
+    } else if(ctx.callbackQuery.data === "clear") {
+      pins[chat.username] = ''
+    } else {
+      pins[chat.username] = (pins[chat.username] || '') + ctx.callbackQuery.data;
+    }
     await ctx.telegram.editMessageText(chat.id, ctx.callbackQuery.message?.message_id, undefined, PIN_MESSAGE + pins[chat.username], {
       reply_markup: pinFinished ? undefined : getNumbersKeyboard()
     });
 
     try {
       if (pinFinished) {
+        console.log(pins[chat.username]);
         await twitterBotClient('start', {verifier: pins[chat.username]});
+        isTwActive = true;
+        say(ctx, `Теперь я слежу за сообщениями в Твиттере`);
         pins[chat.username] = '';
       }
     } catch (e) {
@@ -81,9 +88,9 @@ function startTgListening() {
 function twitterBotClient(command: string, data?: BodyData) {
   const url = TWITTER_BOT_API_URL?.toString() + command;
   if (data) {
-    return needle("post", url, data);
+    return needle('post', url, data, {json: true})
   } else {
-    return needle("get", url);
+    return needle('get', url)
   }
 }
 
@@ -126,9 +133,8 @@ api.command("starttw", async (ctx) => {
   if (ctx.message.from.username && !isTwActive) {
     try {
       const result = await twitterBotClient('authorization-url');
-      isTwActive = true;
       pins[ctx.message.from.username] = '';
-      say(ctx, `Теперь я слежу за сообщениями в Твиттере [Получите пин и введите его ниже:](${result.body.url})`);
+      say(ctx, `[Получите пин и введите его](${result.body.url})`);
       say(ctx, "Пин: ", getNumbersKeyboard());
     } catch (e) {
       twitterApiAccessError(ctx, e);
@@ -184,12 +190,14 @@ function getNumbersKeyboard(): InlineKeyboardMarkup {
         {text: '7', callback_data: "7"},
         {text: '8', callback_data: "8"},
         {text: '9', callback_data: "9"},
-        {text: '0', callback_data: "0"}]
+        {text: '0', callback_data: "0"}],
+      [{text: 'Enter', callback_data: "enter"},
+        {text: 'Clear', callback_data: "clear"}]
     ]
   };
 }
 
 function twitterApiAccessError(ctx: Context, e: unknown) {
   console.error("Twitter API is not responding", e);
-  say(ctx, "Кажется твиттер бот не отвечает... Пожалуйста сообщите Администратору.");
+  say(ctx, "Кажется, твиттер бот не отвечает... Пожалуйста, сообщите Администратору.");
 }
