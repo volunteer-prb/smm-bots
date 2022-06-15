@@ -2,21 +2,34 @@
 Bots for reposting messages in Twitter and TG
 
 # how to install
-1. Install npm
+1. Prerequisite. Install docker and docker-compose
+2. Clone file `telegram-bot/.env.example` to `telegram-bot/.env` 
 ```shell script
-npm install
+cp telegram-bot/.env.example telegram-bot/.env
 ```
-2. Clone file `.env.example` to `.env` 
+3.Edit file `telegram-bot/.env` and fill the variables
 ```shell script
-cp .env.example .env
+vi telegram-bot/.env
 ```
-2. Edit file `.env` and fill the variables
+4.Clone file `twitter-bot-python/.env.example` to `twitter-bot-python/.env`
 ```shell script
-vi .env
+cp twitter-bot-python/.env.example twitter-bot-python/.env
+```
+5.Edit file `twitter-bot-python/.env` and fill the variables
+```shell script
+vi twitter-bot-python/.env
+```
+6. Build containers with docker-compose
+```shell script
+vi docker-compose build
 ```
 
-
-# how to run
+# how to run services
 ```shell script
-npx ts-node index.ts
+vi docker-compose up
+```
+
+# how to stop services
+```shell script
+vi docker-compose down
 ```

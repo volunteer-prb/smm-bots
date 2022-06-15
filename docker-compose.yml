@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+    telegram-bot:
+        build: telegram-bot/.
+        restart: always
+        links:
+            - "twitter-bot"
+    twitter-bot:
+        build: twitter-bot-python/.
+        restart: always
+
