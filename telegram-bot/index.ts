@@ -146,7 +146,7 @@ api.command("starttw", async (ctx) => {
 
 api.command("stoptw", async (ctx) => {
   if (isTwActive) {
-    await twitterBotClient('stop');
+    await twitterBotClient('stop', {});
     isTwActive = false;
     try {
       say(ctx, "Больше не буду следить за сообщениями в Твиттере");
