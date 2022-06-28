@@ -16,6 +16,9 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         elif self.path == '/authorization-url':
             authorization_url = self.twitter_bot.start_authorization()
             self.__send_ok_response({"url": f"{authorization_url}"})
+        elif self.path == '/list':
+            twits = self.twitter_bot.fetch_twits_of_day()
+            self.__send_ok_response(twits)
         else:
             self.__send_invalid_request_response(f"The endpoint GET {self.path} is not supported")
 
@@ -69,6 +72,7 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         print(f"Server started {url}\n"
               "Supported endpoints:\n"
               f"GET \t{url}/authorization-url - get authorization url\n"
+              f"GET \t{url}/list - get list of twits\n"
               f"POST \t{url}/start - start server\n"
               f"POST \t{url}/stop - stop server\n"
               f"GET \t{url}/status - get server status\n"
