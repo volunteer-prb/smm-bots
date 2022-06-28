@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     handler = partial(TwitterBotHandler, bot)
     server = HTTPServer((HOST_NAME, SERVER_PORT), handler)
-    print("Server started http://%s:%s" % (HOST_NAME, SERVER_PORT))
+    TwitterBotHandler.print_help(HOST_NAME, SERVER_PORT)
 
     try:
         server.serve_forever()

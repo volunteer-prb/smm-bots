@@ -3,6 +3,7 @@ import schedule
 import time
 import logging
 import os
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import threading
 from src.oauth_helper import OauthHelper
@@ -18,8 +19,11 @@ class TwitterBot:
         self.oauth_helper = None
         self.job = None
         self.thread = None
+        self.start_time = None
+        self.end_time = None
 
     def run(self):
+        # self.start_time = datetime.utcnow() - timedelta(seconds=30)
         self.thread = threading.Thread(target=self.__run_loop)
         self.thread.start()
 
@@ -64,17 +68,22 @@ class TwitterBot:
         self.retweet_twits(twits)
 
     def fetch_twits(self):
+        self.end_time = datetime.utcnow() - timedelta(seconds=30)
         query_params = {
             'query': TWEETS_SEARCH_QUERY,
-            # 'start_time': start_date,
-            # 'end_time': end_date,
-            'max_results': 10,
+            # 'start_time': self.__get_formatted_time(self.start_time),
+            # 'end_time': self.__get_formatted_time(self.end_time),
+            # 'max_results': 10,
             'expansions': 'author_id,in_reply_to_user_id,geo.place_id',
             'tweet.fields': 'id,text,author_id,in_reply_to_user_id,geo,conversation_id,created_at,lang,public_metrics,referenced_tweets,reply_settings,source',
             'user.fields': 'id,name,username,created_at,description,public_metrics,verified',
             'place.fields': 'full_name,id,country,country_code,geo,name,place_type',
             'next_token': {}
         }
+        if self.start_time is not None:
+            query_params['start_time'] = self.__get_formatted_time(self.start_time)
+        if self.end_time is not None:
+            query_params['end_time'] = self.__get_formatted_time(self.end_time)
         response = requests.get(
             url="https://api.twitter.com/2/tweets/search/recent",
             params=query_params,
@@ -84,9 +93,16 @@ class TwitterBot:
             }
         )
         logging.debug(f'fetch_twits: response = {response}')
+        self.start_time = self.end_time
         if response.status_code != 200:
             logging.error(f'Cannot fetch twits. Response code: {response.status_code}, response content: {response.content}')
         return response.json()
+
+    @staticmethod
+    def __get_formatted_time(the_time: datetime):
+        if datetime is None:
+            return "null"
+        return the_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def create_twit(self, text):
         response = requests.post(
@@ -119,6 +135,7 @@ class TwitterBot:
             logging.error(f'Twit {twit} was not retweeted. Response code: {response.status_code}, response content: {response.content}')
 
     def retweet_twits(self, twits):
-        for twit in reversed(twits["data"]):
-            # self.create_twit(auth, twit['text'])
-            self.retweet_twit(twit)
+        if twits['meta']['result_count'] > 0:
+            for twit in reversed(twits["data"]):
+                # self.create_twit(auth, twit['text'])
+                self.retweet_twit(twit)

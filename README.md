@@ -21,15 +21,15 @@ vi twitter-bot-python/.env
 ```
 6. Build containers with docker-compose
 ```shell script
-vi docker-compose build
+docker-compose build
 ```
 
 # how to run services
 ```shell script
-vi docker-compose up
+docker-compose up
 ```
 
 # how to stop services
 ```shell script
-vi docker-compose down
+docker-compose down
 ```
