@@ -23,14 +23,19 @@ class OauthHelper:
         self.resource_owner_oauth_token = None
         self.resource_owner_oauth_token_secret = None
         self.authorization_url = None
-        self.auth2_token = None
+        self.auth2_token = self.__get_oauth2_token()
 
     def start_authorization(self):
-        self.auth2_token = self.__get_oauth2_token()
+        self.auth1_session = None
+        self.user_id = None
+        self.auth1 = None
         self.resource_owner_oauth_token, self.resource_owner_oauth_token_secret = self.__request_token()
         self.authorization_url = \
             f"https://api.twitter.com/oauth/authorize?oauth_token={self.resource_owner_oauth_token}"
         return self.authorization_url
+
+    def is_authorization_started(self):
+        return self.authorization_url is not None
 
     def end_authorization(self, verifier):
         self.auth1_session, self.user_id = self.__get_user_access_tokens(
@@ -38,6 +43,9 @@ class OauthHelper:
             self.resource_owner_oauth_token_secret,
             verifier)
         self.auth1 = self.auth1_session.auth
+
+    def is_authorization_ended(self):
+        return self.auth1 is not None
 
     @staticmethod
     def __request_token():

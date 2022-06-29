@@ -12,15 +12,16 @@ load_dotenv()
 
 UPDATE_WATCHER_TIMEOUT_IN_SECONDS = int(os.environ['UPDATE_WATCHER_TIMEOUT_IN_SECONDS'])
 TWEETS_SEARCH_QUERY = str(os.environ['TWEETS_SEARCH_QUERY'])
+TWEETS_SEARCH_QUERY_FOR_DAY = str(os.environ['TWEETS_SEARCH_QUERY_FOR_DAY'])
 
 
 class TwitterBot:
     def __init__(self):
-        self.oauth_helper = None
         self.job = None
         self.thread = None
         self.start_time = None
         self.end_time = None
+        self.oauth_helper = OauthHelper()
 
     def run(self):
         # self.start_time = datetime.utcnow() - timedelta(seconds=30)
@@ -39,7 +40,6 @@ class TwitterBot:
     def start_authorization(self):
         if self.is_started():
             raise RuntimeError("Service already started. Stop service and start authorization again")
-        self.oauth_helper = OauthHelper()
         authorization_url = self.oauth_helper.start_authorization()
         print(f"Service authorization is started. Authorization link is {authorization_url}")
         return authorization_url
@@ -47,7 +47,7 @@ class TwitterBot:
     def start(self, verifier):
         if self.is_started():
             raise RuntimeError("Service already started. Stop service and start authorization again")
-        if self.oauth_helper is None:
+        if not self.oauth_helper.is_authorization_started():
             raise RuntimeError("Authorization is not started. Start authorization and start service again")
         self.oauth_helper.end_authorization(verifier)
         self.job = schedule.every(UPDATE_WATCHER_TIMEOUT_IN_SECONDS) \
@@ -69,8 +69,18 @@ class TwitterBot:
 
     def fetch_twits(self):
         self.end_time = datetime.utcnow() - timedelta(seconds=30)
+        response = self.__fetch_twits(TWEETS_SEARCH_QUERY, self.start_time, self.end_time)
+        self.start_time = self.end_time
+        return response
+
+    def fetch_twits_of_day(self):
+        end_time = datetime.utcnow() - timedelta(seconds=30)
+        start_time = end_time - timedelta(days=1)
+        return self.__fetch_twits(TWEETS_SEARCH_QUERY_FOR_DAY, start_time, end_time)
+
+    def __fetch_twits(self, query, start_time, end_time):
         query_params = {
-            'query': TWEETS_SEARCH_QUERY,
+            'query': query,
             # 'start_time': self.__get_formatted_time(self.start_time),
             # 'end_time': self.__get_formatted_time(self.end_time),
             # 'max_results': 10,
@@ -80,10 +90,10 @@ class TwitterBot:
             'place.fields': 'full_name,id,country,country_code,geo,name,place_type',
             'next_token': {}
         }
-        if self.start_time is not None:
-            query_params['start_time'] = self.__get_formatted_time(self.start_time)
-        if self.end_time is not None:
-            query_params['end_time'] = self.__get_formatted_time(self.end_time)
+        if start_time is not None:
+            query_params['start_time'] = self.__get_formatted_time(start_time)
+        if end_time is not None:
+            query_params['end_time'] = self.__get_formatted_time(end_time)
         response = requests.get(
             url="https://api.twitter.com/2/tweets/search/recent",
             params=query_params,
