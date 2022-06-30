@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import {Telegraf, Context} from "telegraf";
 import {ForceReply} from "typegram/markup";
 import {InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove} from "telegraf/typings/core/types/typegram";
+import * as fs from "fs";
+import {Readable} from "stream";
 
 dotenv.config();
 
@@ -156,6 +158,22 @@ api.command("stoptw", async (ctx) => {
   }
 
   say(ctx, "Я не слежу за сообщениями в Твиттере");
+});
+
+api.command('printtw', async (ctx) => {
+  say(ctx, `Запрашиваю, подождите...`);
+  try {
+
+    const result = await twitterBotClient('list', {});
+
+    const stream = new Readable();
+    stream.push(result.body);
+    stream.push(null);
+
+    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: 'test.txt'});
+  } catch (e) {
+    twitterApiAccessError(ctx, e);
+  }
 });
 
 api.on('text', (ctx) => {
