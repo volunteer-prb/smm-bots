@@ -2,6 +2,11 @@ from http.server import BaseHTTPRequestHandler
 from src.twitter_bot import TwitterBot
 import logging
 import json
+import sys
+if (3, 0) <= sys.version_info:
+    from urllib.parse import urlparse
+elif (2, 0) <= sys.version_info <= (2, 9):
+    from urlparse import urlparse
 
 
 class TwitterBotHandler(BaseHTTPRequestHandler):
@@ -17,7 +22,10 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
             authorization_url = self.twitter_bot.start_authorization()
             self.__send_ok_response({"url": f"{authorization_url}"})
         elif self.path == '/list':
-            twits = self.twitter_bot.fetch_twits_of_day()
+            twits = self.twitter_bot.fetch_twits_of_day('')
+            self.__send_ok_response(twits)
+        elif self.path.startswith('/list?'):
+            twits = self.twitter_bot.fetch_twits_of_day(urlparse(self.path).query)
             self.__send_ok_response(twits)
         else:
             self.__send_invalid_request_response(f"The endpoint GET {self.path} is not supported")
@@ -72,7 +80,8 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         print(f"Server started {url}\n"
               "Supported endpoints:\n"
               f"GET \t{url}/authorization-url - get authorization url\n"
-              f"GET \t{url}/list - get list of twits\n"
+              f"GET \t{url}/list - get list of twits for the last 24 hours\n"
+              f"GET \t{url}/list?time=<time> - get list of twits for the 24 hours before time if it's a time, and for this date if it's a date\n"
               f"POST \t{url}/start - start server\n"
               f"POST \t{url}/stop - stop server\n"
               f"GET \t{url}/status - get server status\n"

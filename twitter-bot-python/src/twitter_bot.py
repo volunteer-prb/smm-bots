@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import threading
 from src.oauth_helper import OauthHelper
+from src.time_parser import TimeParser
 
 load_dotenv()
 
@@ -73,10 +74,19 @@ class TwitterBot:
         self.start_time = self.end_time
         return response
 
-    def fetch_twits_of_day(self):
-        end_time = datetime.utcnow() - timedelta(seconds=30)
+    def fetch_twits_of_day(self, query):
+        end_time = self._get_end_time(query) - timedelta(seconds=30)
         start_time = end_time - timedelta(days=1)
         return self.__fetch_twits(TWEETS_SEARCH_QUERY_FOR_DAY, start_time, end_time)
+
+    @staticmethod
+    def _get_end_time(query):
+        if query is not None and query != '':
+            query_components = dict(qc.split("=") for qc in query.split("&"))
+            date_time = TimeParser.get_time(query_components['time'])
+            if date_time is not None:
+                return date_time
+        return datetime.utcnow()
 
     def __fetch_twits(self, query, start_time, end_time):
         query_params = {
