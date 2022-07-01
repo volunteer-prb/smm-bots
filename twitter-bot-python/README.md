@@ -58,3 +58,13 @@ Example response
     "status": "started"
 }
 ```
+### Get list of twits 
+```
+    $ curl http://0.0.0.0:9081/list?time=2022-06-24
+````
+Example response
+```
+{
+    "status": "started"
+}
+```
