@@ -77,7 +77,8 @@ class TwitterBot:
     def fetch_twits_of_day(self, query):
         end_time = self._get_end_time(query) - timedelta(seconds=30)
         start_time = end_time - timedelta(days=1)
-        return self.__fetch_twits(TWEETS_SEARCH_QUERY_FOR_DAY, start_time, end_time)
+        twits = self.__fetch_twits(TWEETS_SEARCH_QUERY_FOR_DAY, start_time, end_time)
+        return twits, end_time
 
     @staticmethod
     def _get_end_time(query):
@@ -96,7 +97,7 @@ class TwitterBot:
             # 'max_results': 10,
             'expansions': 'author_id,in_reply_to_user_id,geo.place_id',
             'tweet.fields': 'id,text,author_id,in_reply_to_user_id,geo,conversation_id,created_at,lang,public_metrics,referenced_tweets,reply_settings,source',
-            'user.fields': 'id,name,username,created_at,description,public_metrics,verified',
+            'user.fields': 'id,name,username,created_at,description,public_metrics,verified,profile_image_url',
             'place.fields': 'full_name,id,country,country_code,geo,name,place_type',
             'next_token': {}
         }

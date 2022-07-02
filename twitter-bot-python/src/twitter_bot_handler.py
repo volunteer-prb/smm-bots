@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 from src.twitter_bot import TwitterBot
+from src.html_generator import HtmlGenerator
 import logging
 import json
 import sys
@@ -22,11 +23,17 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
             authorization_url = self.twitter_bot.start_authorization()
             self.__send_ok_response({"url": f"{authorization_url}"})
         elif self.path == '/list':
-            twits = self.twitter_bot.fetch_twits_of_day('')
+            twits, end_time = self.twitter_bot.fetch_twits_of_day('')
             self.__send_ok_response(twits)
         elif self.path.startswith('/list?'):
-            twits = self.twitter_bot.fetch_twits_of_day(urlparse(self.path).query)
+            twits, end_time = self.twitter_bot.fetch_twits_of_day(urlparse(self.path).query)
             self.__send_ok_response(twits)
+        elif self.path == '/list/html':
+            twits, end_time = self.twitter_bot.fetch_twits_of_day('')
+            self.__send_ok_html_response(HtmlGenerator().render(twits, end_time))
+        elif self.path.startswith('/list/html?'):
+            twits, end_time = self.twitter_bot.fetch_twits_of_day(urlparse(self.path).query)
+            self.__send_ok_html_response(HtmlGenerator().render(twits, end_time))
         else:
             self.__send_invalid_request_response(f"The endpoint GET {self.path} is not supported")
 
@@ -57,6 +64,12 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(obj).encode('utf-8'))
 
+    def __send_ok_html_response(self, text_html):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(bytes(text_html, 'utf-8'))
+
     def __send_invalid_request_response(self, error_message):
         self.send_response(400)
         self.send_header("Content-type", "application/json")
@@ -82,6 +95,8 @@ class TwitterBotHandler(BaseHTTPRequestHandler):
               f"GET \t{url}/authorization-url - get authorization url\n"
               f"GET \t{url}/list - get list of twits for the last 24 hours\n"
               f"GET \t{url}/list?time=<time> - get list of twits for the 24 hours before time if it's a time, and for this date if it's a date\n"
+              f"GET \t{url}/list/html - get list of twits for the last 24 hours as html\n"
+              f"GET \t{url}/list/html?time=<time> - get list of twits for the 24 hours before time if it's a time as html\n"
               f"POST \t{url}/start - start server\n"
               f"POST \t{url}/stop - stop server\n"
               f"GET \t{url}/status - get server status\n"
