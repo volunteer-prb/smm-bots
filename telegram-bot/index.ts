@@ -164,20 +164,20 @@ api.command('printtw', async (ctx) => {
   say(ctx, `Запрашиваю, подождите...`);
   try {
 
-    const result = await twitterBotClient('list', {});
+    const result = await twitterBotClient('list/html');
 
     const stream = new Readable();
     stream.push(result.body);
     stream.push(null);
 
-    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: 'test.txt'});
+    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: 'test.html'});
   } catch (e) {
     twitterApiAccessError(ctx, e);
   }
 });
 
 api.on('text', (ctx) => {
-  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw`);
+  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw\n/printtw`);
 });
 
 function say(ctx: Context, message: string, reply_markup:
