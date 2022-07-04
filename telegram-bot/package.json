@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "dotenv": "^16.0.1",
+    "moment": "^2.29.3",
     "needle": "^3.1.0",
     "telegraf": "^4.8.5",
     "telegram-bot-api": "2.0.1",

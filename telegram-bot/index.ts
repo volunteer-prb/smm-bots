@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import {Telegraf, Context} from "telegraf";
 import {ForceReply} from "typegram/markup";
 import {InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove} from "telegraf/typings/core/types/typegram";
-import * as fs from "fs";
 import {Readable} from "stream";
+import moment from "moment";
 
 dotenv.config();
 
@@ -98,7 +98,6 @@ function twitterBotClient(command: string, data?: BodyData) {
 
 // Telegram specific commands
 api.command("infotg", (ctx) => {
-  console.log("uese!");
   say(ctx, `Я ${isTgActive ? 'слежу' : 'отдыхаю'}`);
 });
 
@@ -161,16 +160,28 @@ api.command("stoptw", async (ctx) => {
 });
 
 api.command('printtw', async (ctx) => {
+  const [, dateStr] = ctx.update.message.text.split(" ");
+
   say(ctx, `Запрашиваю, подождите...`);
+  const date = [
+    "DD-MM-YYYY",
+    "DD.MM.YYYY",
+    "DD/MM/YYYY",
+  ].reduce((result, format) => {
+    const tmpDate = moment(dateStr, format);
+
+    return tmpDate.isValid() ? tmpDate : result;
+  }, moment());
+
   try {
 
-    const result = await twitterBotClient('list/html');
+    const result = await twitterBotClient(`list/html?time=${date.format("DD-MM-YYYY")}`);
 
     const stream = new Readable();
     stream.push(result.body);
     stream.push(null);
 
-    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: 'test.html'});
+    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: `output_${date.format('DD_MM_YYYY')}.html`});
   } catch (e) {
     twitterApiAccessError(ctx, e);
   }
