@@ -4,16 +4,18 @@
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
         <meta content="utf-8" http-equiv="encoding">
         <style>
-        table, th, td {
-          border: 1px solid black;
-        }
+            body {font-family: Arial, sans-serif;}
+            .tab {border-collapse:collapse;}
+            .tab .row {border-bottom:1px solid #EEE;border-top:1px solid #EEE;}
+            .reaction_tab {border-top:1px solid #EEE;}
+            .reaction_tab .reaction_cell {font-size: 18px;vertical-align: center;padding-right:10px;}
         </style>
     </head>
     <body>
 
         <h1>{{ date_time }}</h1>
 
-        <table>{{ table_content }}</table>
+        <table class="tab">{{ table_content }}</table>
 
     </body>
 </html>

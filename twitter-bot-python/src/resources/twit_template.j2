@@ -1,13 +1,26 @@
-<tr>
+<tr class="row">
     <td>{{ author_name }}</td>
     <td><img src="{{ author_profile_image_url }}"></td>
     <td>{{ created_at }}</td>
-    <td>{{ text }}</td>
-    <table>
-        <tr>
-            <td>like: {{ like_count }}</td>
-            <td>retweet: {{ retweet_count }}</td>
-            <td>reply: {{ reply_count }}</td>
-        </tr>
-    </table>
+    <td>
+        <table>
+            <tr>
+                <td>{{ text }}</td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="reaction_tab">
+                        <tr>
+                            <td><img src="https://img.icons8.com/material-outlined/24/000000/like--v1.png"/></td>
+                            <td class="reaction_cell">{{ like_count }}</td>
+                            <td><img src="https://img.icons8.com/material-outlined/24/000000/retweet.png"/></td>
+                            <td class="reaction_cell">{{ retweet_count }}</td>
+                            <td><img src="https://img.icons8.com/material-outlined/24/000000/comments--v1.png"/></td>
+                            <td class="reaction_cell">{{ reply_count }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
 </tr>
