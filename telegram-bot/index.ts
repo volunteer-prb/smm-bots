@@ -181,7 +181,7 @@ api.command('printtw', async (ctx) => {
       }, null)
     : undefined;
 
-  if(date == null) {
+  if(date === null) {
     error(ctx, "Неправильно введена датаю Попробуйте еще раз");
     return;
   }
@@ -199,7 +199,7 @@ api.command('printtw', async (ctx) => {
 
     await api.telegram.sendDocument(ctx.chat.id, {
       source: stream,
-      filename: `output_${date.format('DD_MM_YYYY')}.html`
+      filename: `output_${(date || moment()).format('DD_MM_YYYY')}.html`
     });
   } catch (e) {
     twitterApiAccessError(ctx, e);
