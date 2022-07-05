@@ -160,30 +160,53 @@ api.command("stoptw", async (ctx) => {
 });
 
 api.command('printtw', async (ctx) => {
+  console.log(ctx.update.message.text);
   const [, dateStr] = ctx.update.message.text.split(" ");
-
   say(ctx, `Запрашиваю, подождите...`);
-  const date = [
-    "DD-MM-YYYY",
-    "DD.MM.YYYY",
-    "DD/MM/YYYY",
-  ].reduce((result, format) => {
-    const tmpDate = moment(dateStr, format);
+  let result = null
+  if(dateStr === '') {
+    try {
+      result = await twitterBotClient('list/html');
+    } catch (e) {
+      twitterApiAccessError(ctx, e);
+    }
+  } else {
+    const date = [
+      "YYYY-MM-DD",
+      "YYYY.MM.DD",
+      "YYYY/MM/DD",
+      "DD-MM-YYYY",
+      "DD.MM.YYYY",
+      "DD/MM/YYYY",
+    ].reduce((result, format) => {
+      const tmpDate = moment(dateStr, format);
 
-    return tmpDate.isValid() ? tmpDate : result;
-  }, moment());
+      return tmpDate.isValid() ? tmpDate : result;
+    }, moment());
+    if(date == null) {
+      error(ctx, "Неправильно введена датаю Попробуйте еще раз")
+    } else {
+      try {
+        result = await twitterBotClient(`list/html?time=${date.format("YYYY-MM-DD")}`);
+      } catch (e) {
+        twitterApiAccessError(ctx, e);
+      }
+    }
+  }
 
-  try {
+  if(result != null) {
+    try {
+      const stream = new Readable();
+      stream.push(result.body);
+      stream.push(null);
 
-    const result = await twitterBotClient(`list/html?time=${date.format("DD-MM-YYYY")}`);
-
-    const stream = new Readable();
-    stream.push(result.body);
-    stream.push(null);
-
-    await api.telegram.sendDocument(ctx.chat.id, {source: stream, filename: `output_${date.format('DD_MM_YYYY')}.html`});
-  } catch (e) {
-    twitterApiAccessError(ctx, e);
+      await api.telegram.sendDocument(ctx.chat.id, {
+        source: stream,
+        filename: `output_${date.format('DD_MM_YYYY')}.html`
+      });
+    } catch (e) {
+      twitterApiAccessError(ctx, e);
+    }
   }
 });
 
@@ -199,6 +222,7 @@ function say(ctx: Context, message: string, reply_markup:
   if (!ctx.message?.chat.id) {
     return;
   }
+
 
   return api.telegram.sendMessage(ctx.message?.chat.id, message.replace(/\./g, '\\.'), {
     parse_mode: "MarkdownV2",
@@ -228,5 +252,9 @@ function getNumbersKeyboard(): InlineKeyboardMarkup {
 
 function twitterApiAccessError(ctx: Context, e: unknown) {
   console.error("Twitter API is not responding", e);
-  say(ctx, "Кажется, твиттер бот не отвечает... Пожалуйста, сообщите Администратору.");
+  error(ctx, "Кажется, твиттер бот не отвечает... Пожалуйста, сообщите Администратору.")
+}
+
+function error(ctx: Context, message: string) {
+  say(ctx, message);
 }
