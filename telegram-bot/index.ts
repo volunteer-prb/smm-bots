@@ -4,7 +4,7 @@ import {Telegraf, Context} from "telegraf";
 import {ForceReply} from "typegram/markup";
 import {InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove} from "telegraf/typings/core/types/typegram";
 import {Readable} from "stream";
-import moment from "moment";
+import moment, {Moment} from "moment";
 
 dotenv.config();
 
@@ -159,59 +159,55 @@ api.command("stoptw", async (ctx) => {
   say(ctx, "Я не слежу за сообщениями в Твиттере");
 });
 
+const dateFormats = [
+  "YYYY-MM-DD",
+  "YYYY.MM.DD",
+  "YYYY/MM/DD",
+  "DD-MM-YYYY",
+  "DD.MM.YYYY",
+  "DD/MM/YYYY",
+];
+
 api.command('printtw', async (ctx) => {
-  console.log(ctx.update.message.text);
   const [, dateStr] = ctx.update.message.text.split(" ");
   say(ctx, `Запрашиваю, подождите...`);
-  let result = null
-  if(dateStr === '') {
-    try {
-      result = await twitterBotClient('list/html');
-    } catch (e) {
-      twitterApiAccessError(ctx, e);
-    }
-  } else {
-    const date = [
-      "YYYY-MM-DD",
-      "YYYY.MM.DD",
-      "YYYY/MM/DD",
-      "DD-MM-YYYY",
-      "DD.MM.YYYY",
-      "DD/MM/YYYY",
-    ].reduce((result, format) => {
-      const tmpDate = moment(dateStr, format);
+  let result = null;
 
-      return tmpDate.isValid() ? tmpDate : result;
-    }, moment());
-    if(date == null) {
-      error(ctx, "Неправильно введена датаю Попробуйте еще раз")
-    } else {
-      try {
-        result = await twitterBotClient(`list/html?time=${date.format("YYYY-MM-DD")}`);
-      } catch (e) {
-        twitterApiAccessError(ctx, e);
-      }
-    }
+  const date = dateStr.trim()
+    ? dateFormats.reduce<Moment | null>((result, format) => {
+        const tmpDate = moment(dateStr, format);
+
+        return tmpDate.isValid() ? tmpDate : result;
+      }, null)
+    : undefined;
+
+  if(date == null) {
+    error(ctx, "Неправильно введена датаю Попробуйте еще раз");
+    return;
   }
 
-  if(result != null) {
-    try {
-      const stream = new Readable();
-      stream.push(result.body);
-      stream.push(null);
+  try {
+    result = await twitterBotClient('list/html' +  (date ? `?time=${date.format("YYYY-MM-DD")}` : ''));
 
-      await api.telegram.sendDocument(ctx.chat.id, {
-        source: stream,
-        filename: `output_${date.format('DD_MM_YYYY')}.html`
-      });
-    } catch (e) {
-      twitterApiAccessError(ctx, e);
+    if (!result) {
+      return;
     }
+
+    const stream = new Readable();
+    stream.push(result.body);
+    stream.push(null);
+
+    await api.telegram.sendDocument(ctx.chat.id, {
+      source: stream,
+      filename: `output_${date.format('DD_MM_YYYY')}.html`
+    });
+  } catch (e) {
+    twitterApiAccessError(ctx, e);
   }
 });
 
 api.on('text', (ctx) => {
-  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw\n/printtw`);
+  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw\n/printtw DD.MM.YYYY`);
 });
 
 function say(ctx: Context, message: string, reply_markup:
