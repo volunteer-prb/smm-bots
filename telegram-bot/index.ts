@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import {Telegraf, Context} from "telegraf";
 import {ForceReply} from "typegram/markup";
 import {InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove} from "telegraf/typings/core/types/typegram";
+import {Readable} from "stream";
+import moment, {Moment} from "moment";
 
 dotenv.config();
 
@@ -96,7 +98,6 @@ function twitterBotClient(command: string, data?: BodyData) {
 
 // Telegram specific commands
 api.command("infotg", (ctx) => {
-  console.log("uese!");
   say(ctx, `Я ${isTgActive ? 'слежу' : 'отдыхаю'}`);
 });
 
@@ -158,8 +159,57 @@ api.command("stoptw", async (ctx) => {
   say(ctx, "Я не слежу за сообщениями в Твиттере");
 });
 
+const dateFormats = [
+  "YYYY-MM-DD",
+  "YYYY.MM.DD",
+  "YYYY/MM/DD",
+  "DD-MM-YYYY",
+  "DD.MM.YYYY",
+  "DD/MM/YYYY",
+];
+
+api.command('printtw', async (ctx) => {
+  const [, dateStr] = ctx.update.message.text.split(" ");
+  say(ctx, `Запрашиваю, подождите...`);
+  let date = null;
+  console.log('dateStr:' + dateStr)
+  if(dateStr && dateStr.length > 0) {
+    date = dateStr.trim()
+        ? dateFormats.reduce<Moment | null>((result, format) => {
+          const tmpDate = moment(dateStr, format);
+
+          return tmpDate.isValid() ? tmpDate : result;
+        }, null)
+        : undefined;
+
+    if (date === null) {
+      error(ctx, "Неправильно введена дата. Попробуйте еще раз c датой в формате DD.MM.YYYY или без даты, тогда получите список за последние сутки");
+      return;
+    }
+  }
+
+  try {
+    const result = await twitterBotClient('list/html' +  (date ? `?time=${date.format("YYYY-MM-DD")}` : ''));
+
+    if (!result) {
+      return;
+    }
+
+    const stream = new Readable();
+    stream.push(result.body);
+    stream.push(null);
+
+    await api.telegram.sendDocument(ctx.chat.id, {
+      source: stream,
+      filename: `output_${(date || moment()).format('DD_MM_YYYY')}.html`
+    });
+  } catch (e) {
+    twitterApiAccessError(ctx, e);
+  }
+});
+
 api.on('text', (ctx) => {
-  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw`);
+  say(ctx, `Доступные команды:\n/infotg\n/infotw\n/starttg\n/stoptg\n/starttw\n/stoptw\n/printtw DD.MM.YYYY`);
 });
 
 function say(ctx: Context, message: string, reply_markup:
@@ -170,6 +220,7 @@ function say(ctx: Context, message: string, reply_markup:
   if (!ctx.message?.chat.id) {
     return;
   }
+
 
   return api.telegram.sendMessage(ctx.message?.chat.id, message.replace(/\./g, '\\.'), {
     parse_mode: "MarkdownV2",
@@ -199,5 +250,9 @@ function getNumbersKeyboard(): InlineKeyboardMarkup {
 
 function twitterApiAccessError(ctx: Context, e: unknown) {
   console.error("Twitter API is not responding", e);
-  say(ctx, "Кажется, твиттер бот не отвечает... Пожалуйста, сообщите Администратору.");
+  error(ctx, "Кажется, твиттер бот не отвечает... Пожалуйста, сообщите Администратору.")
+}
+
+function error(ctx: Context, message: string) {
+  say(ctx, message);
 }
