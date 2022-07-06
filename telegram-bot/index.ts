@@ -171,23 +171,25 @@ const dateFormats = [
 api.command('printtw', async (ctx) => {
   const [, dateStr] = ctx.update.message.text.split(" ");
   say(ctx, `Запрашиваю, подождите...`);
-  let result = null;
+  let date = null;
+  console.log('dateStr:' + dateStr)
+  if(dateStr && dateStr.length > 0) {
+    date = dateStr.trim()
+        ? dateFormats.reduce<Moment | null>((result, format) => {
+          const tmpDate = moment(dateStr, format);
 
-  const date = dateStr.trim()
-    ? dateFormats.reduce<Moment | null>((result, format) => {
-        const tmpDate = moment(dateStr, format);
+          return tmpDate.isValid() ? tmpDate : result;
+        }, null)
+        : undefined;
 
-        return tmpDate.isValid() ? tmpDate : result;
-      }, null)
-    : undefined;
-
-  if(date === null) {
-    error(ctx, "Неправильно введена датаю Попробуйте еще раз");
-    return;
+    if (date === null) {
+      error(ctx, "Неправильно введена дата. Попробуйте еще раз c датой в формате DD.MM.YYYY или без даты, тогда получите список за последние сутки");
+      return;
+    }
   }
 
   try {
-    result = await twitterBotClient('list/html' +  (date ? `?time=${date.format("YYYY-MM-DD")}` : ''));
+    const result = await twitterBotClient('list/html' +  (date ? `?time=${date.format("YYYY-MM-DD")}` : ''));
 
     if (!result) {
       return;
